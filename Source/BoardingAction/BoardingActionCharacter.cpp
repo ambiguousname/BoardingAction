@@ -26,12 +26,9 @@ ABoardingActionCharacter::ABoardingActionCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
-	MasterRot = CreateDefaultSubobject<USceneComponent>(TEXT("MasterRotation"));
-	MasterRot->SetupAttachment(RootComponent);
-
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(MasterRot);
+	FirstPersonCameraComponent->SetupAttachment(RootComponent);
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-39.56f, 1.75f, 64.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
@@ -50,7 +47,7 @@ ABoardingActionCharacter::ABoardingActionCharacter()
 	FP_Gun->bCastDynamicShadow = false;
 	FP_Gun->CastShadow = false;
 	// FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
-	FP_Gun->SetupAttachment(MasterRot);
+	FP_Gun->SetupAttachment(RootComponent);
 
 	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
 	FP_MuzzleLocation->SetupAttachment(FP_Gun);
@@ -94,6 +91,9 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
 	mover->AddImpulse(worldPhysics->GetGravity(), true);
 	SetActorRotation(worldPhysics->GetGravity().ToOrientationRotator());
+	if (FMath::RandBool() == true) {
+		this->OnRightClick();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

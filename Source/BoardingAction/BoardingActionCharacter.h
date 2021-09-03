@@ -37,9 +37,6 @@ class ABoardingActionCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
 
-	UPROPERTY(VisibleDefaultsOnly, Category = Mesh);
-	USceneComponent* MasterRot;
-
 public:
 	ABoardingActionCharacter();
 
