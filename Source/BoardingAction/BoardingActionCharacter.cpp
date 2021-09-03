@@ -11,7 +11,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
-#include "PhysicsSubsystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -90,6 +89,13 @@ void ABoardingActionCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	UWorld* world = GetWorld();
+	worldPhysics = world->GetSubsystem<UPhysicsSubsystem>();
+
+	// Make sure we can add a tick:
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickGroup = TG_PrePhysics;
+
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
 	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
 
@@ -104,6 +110,12 @@ void ABoardingActionCharacter::BeginPlay()
 		VR_Gun->SetHiddenInGame(true, true);
 		Mesh1P->SetHiddenInGame(false, true);
 	}
+}
+
+void ABoardingActionCharacter::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
+	mover->AddImpulse(worldPhysics->GetGravity(), true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -219,9 +231,6 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 }
 
 void ABoardingActionCharacter::OnRightClick() {
-
-	UWorld* world = GetWorld();
-	UPhysicsSubsystem* worldPhysics = world->GetSubsystem<UPhysicsSubsystem>();
 	if (worldPhysics->GetGravity().Z == -9.8f) {
 		worldPhysics->SetGravity(0, 0, 9.8f);
 	}

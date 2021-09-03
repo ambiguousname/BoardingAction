@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "PhysicsSubsystem.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "BoardingActionCharacter.generated.h"
 
 class UInputComponent;
@@ -57,6 +59,8 @@ public:
 protected:
 	virtual void BeginPlay();
 
+	virtual void Tick(float DeltaTime);
+
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -88,6 +92,8 @@ public:
 
 protected:
 	
+	UPhysicsSubsystem* worldPhysics;
+
 	/** Fires a projectile. */
 	void OnFire();
 
