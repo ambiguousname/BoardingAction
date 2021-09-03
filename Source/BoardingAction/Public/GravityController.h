@@ -22,6 +22,7 @@ protected:
 	virtual void BeginPlay() override;
 	AActor* parent;
 	UPhysicsSubsystem *worldPhysics;
+	UPrimitiveComponent* mesh;
 
 public:	
 	// Called every frame

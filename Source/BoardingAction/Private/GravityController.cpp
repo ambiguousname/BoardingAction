@@ -21,6 +21,7 @@ void UGravityController::BeginPlay()
 	parent = GetOwner();
 	UWorld* world = GetWorld();
 	worldPhysics = world->GetSubsystem<UPhysicsSubsystem>();
+	mesh = parent->FindComponentByClass<UPrimitiveComponent>();
 
 	// ...
 	
@@ -31,9 +32,7 @@ void UGravityController::BeginPlay()
 void UGravityController::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	UPrimitiveComponent* mesh = parent->FindComponentByClass<UPrimitiveComponent>();
-	mesh->AddImpulse(worldPhysics->GetGravity());
-	//UE_LOG(LogTemp, Warning, TEXT("The Actor's name is %s"), *mesh->GetName());
+	mesh->AddImpulse(worldPhysics->GetGravity(), NAME_None, true);
 
 	// ...
 }
