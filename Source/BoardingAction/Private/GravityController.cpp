@@ -32,7 +32,7 @@ void UGravityController::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	UPrimitiveComponent* mesh = parent->FindComponentByClass<UPrimitiveComponent>();
-	mesh->AddImpulse(worldPhysics->GetGravity() * mesh->GetMass());
+	mesh->AddImpulse(worldPhysics->GetGravity());
 	//UE_LOG(LogTemp, Warning, TEXT("The Actor's name is %s"), *mesh->GetName());
 
 	// ...
