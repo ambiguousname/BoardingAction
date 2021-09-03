@@ -18,6 +18,7 @@ UPawnGravityController::UPawnGravityController()
 void UPawnGravityController::BeginPlay()
 {
 	Super::BeginPlay();
+	mover = parent->FindComponentByClass<UCharacterMovementComponent>();
 
 	// ...
 	
@@ -28,10 +29,7 @@ void UPawnGravityController::BeginPlay()
 void UPawnGravityController::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	/*FVector actorUp = parent->GetActorUpVector();
-	FRotator actorRot = parent->GetActorRotation();
-	FRotator newRot = FMath::Lerp(actorRot, actorUp.ToOrientationRotator() - worldPhysics->GetGravity().ToOrientationRotator(), 0.01f);
-	parent->AddActorLocalRotation(newRot);*/
+	mover->AddImpulse(worldPhysics->GetGravity(), true);
 	// ...
 }
 

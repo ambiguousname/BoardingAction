@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GravityController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "PawnGravityController.generated.h"
 
 
@@ -20,7 +21,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
-
+	UCharacterMovementComponent* mover;
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
