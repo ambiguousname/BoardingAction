@@ -93,7 +93,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
 	mover->AddImpulse(worldPhysics->GetGravity(), true);
-	MasterRot->SetWorldRotation(worldPhysics->GetGravity().ToOrientationRotator());
+	SetActorRotation(worldPhysics->GetGravity().ToOrientationRotator());
 }
 
 //////////////////////////////////////////////////////////////////////////
