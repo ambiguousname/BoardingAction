@@ -97,7 +97,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// Secondly, keep track of the difference between where the camera is looking and where gravity is pulling, and update accordingly when gravity changes.
 	// Maybe another solution would be to follow the 180 degree rule. Make a plane from the direction where gravity is currently pulling and the player's right vector.
 	// Then if the vector goes over the plane (the dot product of the plane's normal vector and the player's forward vector < 0)
-	// Multiply the player's forward vector by the negative of the plane's normal vector.
+	// Multiply the player's forward vector by the negative of the plane's normal vector (this should be a unit vector).
 
 	/*FRotator gravityRot = worldPhysics->GetGravity().ToOrientationRotator();
 	FRotator defaultGravity = (FVector{ 0, 0, -9.8f }).ToOrientationRotator();
