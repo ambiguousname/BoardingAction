@@ -90,10 +90,24 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
 	mover->AddImpulse(worldPhysics->GetGravity(), true);
-	SetActorRotation(worldPhysics->GetGravity().ToOrientationRotator());
-	if (FMath::RandBool() == true) {
+
+	// Thoughts on how to get rotations right:
+	// First, make it gradual. That way you'll be able to figure out what's going on, and players can acclimate.
+	// One way might be to make an "effective" gravity that Lerps over time to the new gravity, that only impacts rotation?
+	// Secondly, keep track of the difference between where the camera is looking and where gravity is pulling, and update accordingly when gravity changes.
+	// Maybe another solution would be to follow the 180 degree rule. Make a plane from the direction where gravity is currently pulling and the cross of where 
+	// gravity used to pull and the player's forward vector. Then if the vector crosses the plane (the dot product of the plane's normal vector and the player's forward vector < 0)
+	// Multiply the player's forward vector by the negative of the plane's normal vector.
+
+	/*FRotator gravityRot = worldPhysics->GetGravity().ToOrientationRotator();
+	FRotator defaultGravity = (FVector{ 0, 0, -9.8f }).ToOrientationRotator();
+	UE_LOG(LogTemp, Warning, TEXT("Gravity Rot: %s %s"), *defaultGravity.ToString(), *gravityRot.ToString());
+	SetActorRotation(GetActorForwardVector().ToOrientationRotator() + gravityRot - defaultGravity);*/
+
+	
+	/*if (FMath::RandBool() == true) {
 		this->OnRightClick();
-	}
+	}*/
 }
 
 //////////////////////////////////////////////////////////////////////////
