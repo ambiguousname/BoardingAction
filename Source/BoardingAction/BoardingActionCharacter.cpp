@@ -95,8 +95,8 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// First, make it gradual. That way you'll be able to figure out what's going on, and players can acclimate.
 	// One way might be to make an "effective" gravity that Lerps over time to the new gravity, that only impacts rotation?
 	// Secondly, keep track of the difference between where the camera is looking and where gravity is pulling, and update accordingly when gravity changes.
-	// Maybe another solution would be to follow the 180 degree rule. Make a plane from the direction where gravity is currently pulling and the cross of where 
-	// gravity used to pull and the player's forward vector. Then if the vector crosses the plane (the dot product of the plane's normal vector and the player's forward vector < 0)
+	// Maybe another solution would be to follow the 180 degree rule. Make a plane from the direction where gravity is currently pulling and the player's right vector.
+	// Then if the vector crosses the plane (the dot product of the plane's normal vector and the player's forward vector < 0)
 	// Multiply the player's forward vector by the negative of the plane's normal vector.
 
 	/*FRotator gravityRot = worldPhysics->GetGravity().ToOrientationRotator();
