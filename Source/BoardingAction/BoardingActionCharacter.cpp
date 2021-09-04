@@ -58,6 +58,8 @@ ABoardingActionCharacter::ABoardingActionCharacter()
 
 	// Uncomment the following line to turn motion controllers on by default:
 	//bUsingMotionControllers = true;
+
+	previousGravity = FVector{0, 0, -9.8f};
 }
 
 void ABoardingActionCharacter::BeginPlay()
@@ -94,20 +96,26 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// Thoughts on how to get rotations right:
 	// First, make it gradual. That way you'll be able to figure out what's going on, and players can acclimate.
 	// One way might be to make an "effective" gravity that Lerps over time to the new gravity, that only impacts rotation?
-	// Secondly, keep track of the difference between where the camera is looking and where gravity is pulling, and update accordingly when gravity changes.
-	// Maybe another solution would be to follow the 180 degree rule. Make a plane from the direction where gravity is currently pulling and the player's right vector.
+	// Secondly, Make sure you obey the 180 degree rule. Make a plane from the direction where gravity is currently pulling and the player's right vector.
 	// Then if the vector goes over the plane (the dot product of the plane's normal vector and the player's forward vector < 0)
 	// Multiply the player's forward vector by the negative of the plane's normal vector (this should be a unit vector).
 
-	/*FRotator gravityRot = worldPhysics->GetGravity().ToOrientationRotator();
-	FRotator defaultGravity = (FVector{ 0, 0, -9.8f }).ToOrientationRotator();
-	UE_LOG(LogTemp, Warning, TEXT("Gravity Rot: %s %s"), *defaultGravity.ToString(), *gravityRot.ToString());
-	SetActorRotation(GetActorForwardVector().ToOrientationRotator() + gravityRot - defaultGravity);*/
-
+	// But primarily, this is about rotating the actor's down vector (and everything else) to match the new gravity vector.
+	// So, when the gravity changes, look at how you can rotate the down vector to match the new gravity.
 	
-	/*if (FMath::RandBool() == true) {
-		this->OnRightClick();
-	}*/
+	if (previousGravity != worldPhysics->GetGravity()) {
+		FRotator downVectorChange = (worldPhysics->GetGravity().ToOrientationRotator() - previousGravity.ToOrientationRotator());
+
+		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
+		/*FVector plane = FVector::CrossProduct(worldPhysics->GetGravity(), GetActorRightVector());
+		plane.Normalize();
+		if (FVector::DotProduct(plane, lookRot) < 0) {
+			lookRot *= -plane;
+		}*/
+		AddActorLocalRotation(downVectorChange);
+	}
+
+	previousGravity = worldPhysics->GetGravity();
 }
 
 //////////////////////////////////////////////////////////////////////////

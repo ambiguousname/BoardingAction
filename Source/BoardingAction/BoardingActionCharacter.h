@@ -45,6 +45,8 @@ protected:
 
 	virtual void Tick(float DeltaTime);
 
+	FVector previousGravity;
+
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
