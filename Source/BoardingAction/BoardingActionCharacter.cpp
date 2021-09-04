@@ -146,10 +146,8 @@ void ABoardingActionCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
 	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("TurnRate", this, &ABoardingActionCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &ABoardingActionCharacter::LookUpAtRate);
+	PlayerInputComponent->BindAxis("Turn", this, &ABoardingActionCharacter::Turn);
+	PlayerInputComponent->BindAxis("LookUp", this, &ABoardingActionCharacter::LookUp);
 }
 
 void ABoardingActionCharacter::OnFire()
@@ -286,16 +284,14 @@ void ABoardingActionCharacter::MoveRight(float Value)
 	}
 }
 
-void ABoardingActionCharacter::TurnAtRate(float Rate)
+void ABoardingActionCharacter::Turn(float Val)
 {
-	// calculate delta for this frame from the rate information
-	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+	AddActorLocalRotation(FRotator{ 0, Val, 0 });
 }
 
-void ABoardingActionCharacter::LookUpAtRate(float Rate)
+void ABoardingActionCharacter::LookUp(float Val)
 {
-	// calculate delta for this frame from the rate information
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	FirstPersonCameraComponent->AddLocalRotation(FRotator{-Val, 0, 0});
 }
 
 bool ABoardingActionCharacter::EnableTouchscreenMovement(class UInputComponent* PlayerInputComponent)
