@@ -47,6 +47,10 @@ protected:
 
 	FVector previousGravity;
 
+	FRotator rotGravity;
+	float rotGravityPercent;
+	float prevGravityPercent;
+
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)

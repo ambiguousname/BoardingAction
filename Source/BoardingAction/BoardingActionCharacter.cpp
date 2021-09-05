@@ -67,6 +67,10 @@ void ABoardingActionCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	rotGravity = (-GetActorUpVector()).ToOrientationRotator();
+	rotGravityPercent = 1;
+	prevGravityPercent = 1;
+
 	UWorld* world = GetWorld();
 	worldPhysics = world->GetSubsystem<UPhysicsSubsystem>();
 
@@ -104,15 +108,27 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// So, when the gravity changes, look at how you can rotate the down vector to match the new gravity.
 	
 	if (previousGravity != worldPhysics->GetGravity()) {
-		FRotator downVectorChange = (worldPhysics->GetGravity().ToOrientationRotator() - previousGravity.ToOrientationRotator());
-
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
 		/*FVector plane = FVector::CrossProduct(worldPhysics->GetGravity(), GetActorRightVector());
 		plane.Normalize();
 		if (FVector::DotProduct(plane, lookRot) < 0) {
 			lookRot *= -plane;
 		}*/
-		AddActorLocalRotation(downVectorChange);
+		rotGravity = worldPhysics->GetGravity().ToOrientationRotator() - previousGravity.ToOrientationRotator();
+		rotGravityPercent = 0;
+		prevGravityPercent = 0;
+	}
+
+	if (rotGravityPercent < 1) {
+		rotGravityPercent += DeltaTime * 5;
+		UE_LOG(LogTemp, Warning, TEXT("%f"), rotGravityPercent);
+
+		AddActorLocalRotation(rotGravity * rotGravityPercent - rotGravity * prevGravityPercent);
+
+		prevGravityPercent = rotGravityPercent;
+	} else if (rotGravityPercent >= 1 && prevGravityPercent >= 1){
+		AddActorLocalRotation(worldPhysics->GetGravity().ToOrientationRotator() - (-GetActorUpVector()).ToOrientationRotator());
+		prevGravityPercent = 0;
 	}
 
 	previousGravity = worldPhysics->GetGravity();
@@ -153,7 +169,7 @@ void ABoardingActionCharacter::SetupPlayerInputComponent(class UInputComponent* 
 void ABoardingActionCharacter::OnFire()
 {
 	// try and fire a projectile
-	if (ProjectileClass != nullptr)
+	/*if (ProjectileClass != nullptr)
 	{
 		UWorld* const World = GetWorld();
 		if (World != nullptr)
@@ -186,7 +202,7 @@ void ABoardingActionCharacter::OnFire()
 		{
 			AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
-	}
+	}*/
 }
 
 void ABoardingActionCharacter::OnResetVR()
