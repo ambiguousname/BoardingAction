@@ -120,14 +120,15 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	}
 
 	if (rotGravityPercent < 1) {
-		rotGravityPercent += DeltaTime * 5;
+		rotGravityPercent += DeltaTime;
 		UE_LOG(LogTemp, Warning, TEXT("%f"), rotGravityPercent);
 
 		AddActorLocalRotation(rotGravity * rotGravityPercent - rotGravity * prevGravityPercent);
 
 		prevGravityPercent = rotGravityPercent;
 	} else if (rotGravityPercent >= 1 && prevGravityPercent >= 1){
-		AddActorLocalRotation(worldPhysics->GetGravity().ToOrientationRotator() - (-GetActorUpVector()).ToOrientationRotator());
+		FRotator remainingRot = worldPhysics->GetGravity().ToOrientationRotator() - (-GetActorUpVector()).ToOrientationRotator();
+		AddActorLocalRotation(remainingRot);
 		prevGravityPercent = 0;
 	}
 
