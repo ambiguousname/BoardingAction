@@ -97,24 +97,20 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
 	mover->AddImpulse(worldPhysics->GetGravity(), true);
 
-	// Thoughts on how to get rotations right:
-	// First, make it gradual. That way you'll be able to figure out what's going on, and players can acclimate.
-	// One way might be to make an "effective" gravity that Lerps over time to the new gravity, that only impacts rotation?
-	// Secondly, Make sure you obey the 180 degree rule. Make a plane from the direction where gravity is currently pulling and the player's right vector.
-	// Then if the vector goes over the plane (the dot product of the plane's normal vector and the player's forward vector < 0)
-	// Multiply the player's forward vector by the negative of the plane's normal vector (this should be a unit vector).
-
-	// But primarily, this is about rotating the actor's down vector (and everything else) to match the new gravity vector.
+	// Primarily, this is about rotating the actor's down vector (and everything else) to match the new gravity vector.
 	// So, when the gravity changes, look at how you can rotate the down vector to match the new gravity.
 	
 	if (previousGravity != worldPhysics->GetGravity()) {
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
+		// Even simpler solution for following the 180 degree rule than this. If the DotProduct of the vector representing
+		// where the player is going to be rotated and the player's forward vector is < 0, multiply the vector by -actorForwardVector.
 		/*FVector plane = FVector::CrossProduct(worldPhysics->GetGravity(), GetActorRightVector());
 		plane.Normalize();
 		if (FVector::DotProduct(plane, lookRot) < 0) {
 			lookRot *= -plane;
 		}*/
 		rotGravity = worldPhysics->GetGravity().ToOrientationRotator() - previousGravity.ToOrientationRotator();
+		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
 		rotGravityPercent = 0;
 		prevGravityPercent = 0;
 	}
@@ -306,6 +302,7 @@ void ABoardingActionCharacter::MoveRight(float Value)
 
 void ABoardingActionCharacter::Turn(float Val)
 {
+	// TODO: Make this instead a rotation around the player's up vector.
 	FirstPersonCameraComponent->AddLocalRotation(FRotator{ 0, Val, 0 });
 }
 
