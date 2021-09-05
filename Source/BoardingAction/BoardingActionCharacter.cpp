@@ -121,6 +121,9 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 	if (rotGravityPercent < 1) {
 		rotGravityPercent += DeltaTime;
+		if (rotGravityPercent > 1) {
+			rotGravityPercent = 1;
+		}
 		UE_LOG(LogTemp, Warning, TEXT("%f"), rotGravityPercent);
 
 		AddActorLocalRotation(rotGravity * rotGravityPercent - rotGravity * prevGravityPercent);
