@@ -101,6 +101,11 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// Primarily, this is about rotating the actor's down vector (and everything else) to match the new gravity vector.
 	// So, when the gravity changes, look at how you can rotate the down vector to match the new gravity.
 	
+	// Just came up with a better fix:
+	// Get the cross product between the actor's current down vector and the current gravity vector.
+	// Normalize the result of that cross product.
+	// You now have a plane whose normal vector you can now rotate your down vector around towards the new gravity vector.
+	
 	
 	if (previousGravity != gravVector) {
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
