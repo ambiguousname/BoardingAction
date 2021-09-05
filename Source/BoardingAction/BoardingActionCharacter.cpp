@@ -23,8 +23,8 @@ ABoardingActionCharacter::ABoardingActionCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
 	// set our turn rates for input
-	BaseTurnRate = 45.f;
-	BaseLookUpRate = 45.f;
+	BaseTurnRate = 1;
+	BaseLookUpRate = 1;
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
@@ -94,13 +94,15 @@ void ABoardingActionCharacter::BeginPlay()
 
 void ABoardingActionCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+	FVector gravVector = worldPhysics->GetGravity();
 	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
-	mover->AddImpulse(worldPhysics->GetGravity(), true);
+	mover->AddImpulse(gravVector, true);
 
 	// Primarily, this is about rotating the actor's down vector (and everything else) to match the new gravity vector.
 	// So, when the gravity changes, look at how you can rotate the down vector to match the new gravity.
 	
-	if (previousGravity != worldPhysics->GetGravity()) {
+	
+	if (previousGravity != gravVector) {
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
 		// Even simpler solution for following the 180 degree rule than this. If the DotProduct of the vector representing
 		// where the player is going to be rotated and the player's forward vector is < 0, multiply the vector by -actorForwardVector.
@@ -109,29 +111,25 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		if (FVector::DotProduct(plane, lookRot) < 0) {
 			lookRot *= -plane;
 		}*/
-		rotGravity = worldPhysics->GetGravity().ToOrientationRotator() - previousGravity.ToOrientationRotator();
+		rotGravity = gravVector.ToOrientationRotator() - ((-GetActorUpVector()).ToOrientationRotator()); 
+
 		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
 		rotGravityPercent = 0;
 		prevGravityPercent = 0;
 	}
 
 	if (rotGravityPercent < 1) {
-		rotGravityPercent += DeltaTime;
+		rotGravityPercent += DeltaTime * GravityRotationRate;
 		if (rotGravityPercent > 1) {
 			rotGravityPercent = 1;
 		}
-		UE_LOG(LogTemp, Warning, TEXT("%f"), rotGravityPercent);
 
 		AddActorLocalRotation(rotGravity * rotGravityPercent - rotGravity * prevGravityPercent);
 
 		prevGravityPercent = rotGravityPercent;
-	} else if (rotGravityPercent >= 1 && prevGravityPercent >= 1){
-		/*FRotator remainingRot = worldPhysics->GetGravity().ToOrientationRotator() - (-GetActorUpVector()).ToOrientationRotator();
-		AddActorLocalRotation(remainingRot);
-		prevGravityPercent = 0;*/
 	}
 
-	previousGravity = worldPhysics->GetGravity();
+	previousGravity = gravVector;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -303,7 +301,7 @@ void ABoardingActionCharacter::MoveRight(float Value)
 void ABoardingActionCharacter::Turn(float Val)
 {
 	if (Val != 0.0f) {
-		FirstPersonCameraComponent->AddLocalRotation(FRotator{ 0, Val, 0 });
+		FirstPersonCameraComponent->AddLocalRotation(FRotator{ 0, Val * BaseTurnRate, 0 });
 		FRotator cameraRot = FirstPersonCameraComponent->GetRelativeRotation();
 		// Because we're adding to local rotation, the camera can get weird about how we rotate. So we make sure to set the roll value to 0.
 		FirstPersonCameraComponent->SetRelativeRotation(FRotator{ cameraRot.Pitch, cameraRot.Yaw, 0 });
@@ -312,10 +310,10 @@ void ABoardingActionCharacter::Turn(float Val)
 
 void ABoardingActionCharacter::LookUp(float Val)
 {
-	FRotator newRot = FirstPersonCameraComponent->GetRelativeRotation() + FRotator{-Val, 0, 0};
+	FRotator newRot = FirstPersonCameraComponent->GetRelativeRotation() + FRotator{-Val * BaseLookUpRate, 0, 0};
 	// Restrict movement on this axis so things don't get weird.
 	if (newRot.Pitch < 85 && newRot.Pitch > -85) {
-		FirstPersonCameraComponent->AddLocalRotation(FRotator{ -Val, 0, 0 });
+		FirstPersonCameraComponent->AddLocalRotation(FRotator{ -Val * BaseLookUpRate, 0, 0 });
 	}
 }
 
