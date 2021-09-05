@@ -287,7 +287,7 @@ void ABoardingActionCharacter::MoveForward(float Value)
 	if (Value != 0.0f)
 	{
 		// add movement in that direction
-		AddMovementInput(GetActorForwardVector(), Value);
+		AddMovementInput(FirstPersonCameraComponent->GetForwardVector(), Value);
 	}
 }
 
@@ -296,14 +296,16 @@ void ABoardingActionCharacter::MoveRight(float Value)
 	if (Value != 0.0f)
 	{
 		// add movement in that direction
-		AddMovementInput(GetActorRightVector(), Value);
+		AddMovementInput(FirstPersonCameraComponent->GetRightVector(), Value);
 	}
 }
 
 void ABoardingActionCharacter::Turn(float Val)
 {
-	// TODO: Make this instead a rotation around the player's up vector.
 	FirstPersonCameraComponent->AddLocalRotation(FRotator{ 0, Val, 0 });
+	FRotator cameraRot = FirstPersonCameraComponent->GetRelativeRotation();
+	// Because we're adding to local rotation, the camera can get weird about how we rotate. So we make sure to set the roll value to 0.
+	FirstPersonCameraComponent->SetRelativeRotation(FRotator{cameraRot.Pitch, cameraRot.Yaw, 0});
 }
 
 void ABoardingActionCharacter::LookUp(float Val)
