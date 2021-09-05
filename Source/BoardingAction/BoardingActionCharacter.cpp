@@ -306,7 +306,7 @@ void ABoardingActionCharacter::MoveRight(float Value)
 
 void ABoardingActionCharacter::Turn(float Val)
 {
-	AddActorLocalRotation(FRotator{ 0, Val, 0 });
+	FirstPersonCameraComponent->AddLocalRotation(FRotator{ 0, Val, 0 });
 }
 
 void ABoardingActionCharacter::LookUp(float Val)
