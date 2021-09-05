@@ -302,15 +302,21 @@ void ABoardingActionCharacter::MoveRight(float Value)
 
 void ABoardingActionCharacter::Turn(float Val)
 {
-	FirstPersonCameraComponent->AddLocalRotation(FRotator{ 0, Val, 0 });
-	FRotator cameraRot = FirstPersonCameraComponent->GetRelativeRotation();
-	// Because we're adding to local rotation, the camera can get weird about how we rotate. So we make sure to set the roll value to 0.
-	FirstPersonCameraComponent->SetRelativeRotation(FRotator{cameraRot.Pitch, cameraRot.Yaw, 0});
+	if (Val != 0.0f) {
+		FirstPersonCameraComponent->AddLocalRotation(FRotator{ 0, Val, 0 });
+		FRotator cameraRot = FirstPersonCameraComponent->GetRelativeRotation();
+		// Because we're adding to local rotation, the camera can get weird about how we rotate. So we make sure to set the roll value to 0.
+		FirstPersonCameraComponent->SetRelativeRotation(FRotator{ cameraRot.Pitch, cameraRot.Yaw, 0 });
+	}
 }
 
 void ABoardingActionCharacter::LookUp(float Val)
 {
-	FirstPersonCameraComponent->AddLocalRotation(FRotator{-Val, 0, 0});
+	FRotator newRot = FirstPersonCameraComponent->GetRelativeRotation() + FRotator{-Val, 0, 0};
+	// Restrict movement on this axis so things don't get weird.
+	if (newRot.Pitch < 85 && newRot.Pitch > -85) {
+		FirstPersonCameraComponent->AddLocalRotation(FRotator{ -Val, 0, 0 });
+	}
 }
 
 bool ABoardingActionCharacter::EnableTouchscreenMovement(class UInputComponent* PlayerInputComponent)
