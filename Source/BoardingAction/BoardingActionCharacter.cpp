@@ -131,15 +131,15 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// All of these equations assume that the magnitude of each of these vectors is 1, so MAKE SURE THAT THE VECTORS ARE NORMALIZED.
 	// Using x, y, and z as the vectors representing our forward, right, and up vectors respectively, we can use this diagram (https://en.wikipedia.org/wiki/Euler_angles#/media/File:Projections_of_Tait-Bryan_angles.svg)
 	// For calculating in terms of atan2.
-	// We can also assume that we'll first be rotating by the z-axis, then the y-axis, then the x-axis (this assumes intrinsic rotation).
+	// We can also assume that we'll first be rotating by the z-axis, then the y-axis, then the x-axis (this assumes intrinsic rotation, so apply these to the local axes after each rotation).
 	// sin(theta) = -x_3 (since theta is negative).
 	// cos(theta) = sqrt(1 - x_3^2) (From the pythagorean theorem)
 	// theta = atan2(-x_3, sqrt(1 - x_3^2))
-	// psi = atan2(x_2, x_1)
-	// phi = atan2(y_3, z_3)
+	// psi = atan2(x_2, x_1). You can see the diagram above for a visual representation of this.
+	// phi = atan2(y_3, z_3). This is because y and z are perpendicular, so the opposite of the triangle formed by z is the adjacent for the triangle formed by y.
 	// I hope this works. If not, more complicated equations are to come!
 	// If you want to see how you come to this by yourself, go into a 3d modelling program (like blender), and make two object axes objects. Try rotating 
-	// one around the local axes by z first, then y, then x. Try rotating all axes but one on 90 degrees, and see what triangles form as you rotate each angle.
+	// one around the local axes by z first, then y, then x. Try rotating all axes but one on 0 or 90 degrees, and see what triangles form as you rotate each angle.
 	// I am stupid, there's a FORMULA FOR TELLING YOU HOW TO GET ARCTAN FROM ZYX. Good to know that I got *nearly* everything right (I messed up in calculating phi).
 	
 	
