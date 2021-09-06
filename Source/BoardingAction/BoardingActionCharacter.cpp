@@ -101,10 +101,45 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// Primarily, this is about rotating the actor's down vector (and everything else) to match the new gravity vector.
 	// So, when the gravity changes, look at how you can rotate the down vector to match the new gravity.
 	
-	// Just came up with a better fix:
 	// Get the cross product between the actor's current down vector and the current gravity vector.
 	// Normalize the result of that cross product.
 	// You now have a plane whose normal vector you can now rotate your down vector around towards the new gravity vector.
+	// If the cross product results in the zero vector, you can rotate along any axis where the components for the vector are zero.
+	// To get the angle to rotate, use these formulas:
+	// cos(theta) * |A| * |B| = dot(A, B).
+	// sin(theta) * |A| * |B| = cross(A, B).
+	// and we want to get theta in terms of atan2 (since atan2 is in terms of the angle from the positive x axis).
+	// sin(theta)/cos(theta) = cross(A, B)/dot(A, B).
+	// tan(theta) = cross(A, B)/dot(A, B).
+	// theta = atan2(cross(A, B), dot(A, B)).
+	// Note, this solution still requires me to use ToOrientationRotator(), which I want to avoid. So instead...
+
+	// Let's just create a rotation matrix.
+	// If d represents our down vector, and g represents where gravity is pulling, we want the matrix:
+	// [ g1/d1  0      0   ]
+	// [  0   g2/d2    0   ]
+	// [  0     0    g3/d3 ]
+	// Since multiplying any of the vectors in the player's coordinate system by this matrix will result in
+	// getting this in terms of gravity's new coordinate system.
+	// From there, we know how the player's vectors should be, and from that we can calculate what the desired rotation is.
+	// Taken from: https://math.stackexchange.com/questions/114050/rotating-two-vectors-to-point-in-the-same-direction
+	// So, step 1: Create a 3x3 matrix, using the formula above.
+	// Step 2: Multiply the up (u), forward (f), and right (r) coordinates for the player by the matrix (we'll call these u', f', and r')
+	// Step 3: Use these formulas: https://en.wikipedia.org/wiki/Euler_angles#Tait%E2%80%93Bryan_angles_2 to calculate the pitch, yaw, and roll.
+	// Make sure to use atan2 instead of inverse sin or cosine.
+	// Remember, rotation on the z-axis (psi) is yaw, y-axis (theta) is pitch, x-axis (phi) is roll.
+	// All of these equations assume that the magnitude of each of these vectors is 1, so MAKE SURE THAT THE VECTORS ARE NORMALIZED.
+	// Using x, y, and z as the vectors representing our forward, right, and up vectors respectively, we can use this diagram (https://en.wikipedia.org/wiki/Euler_angles#/media/File:Projections_of_Tait-Bryan_angles.svg)
+	// For calculating in terms of atan2.
+	// We can also assume that we'll first be rotating by the z-axis, then the y-axis, then the x-axis.
+	// sin(theta) = -x_3 (since theta is negative).
+	// cos(theta) = sqrt(1 - x_3^2) (From the pythagorean theorem)
+	// theta = atan2(-x_3, sqrt(1 - x_3^2))
+	// psi = atan2(x_2, x_1)
+	// phi = atan2(z_2, y_2)
+	// I hope this works. If not, more complicated equations are to come!
+	// If you want to see how you come to this by yourself, go into a 3d modelling program (like blender), and make two object axes objects. Try rotating 
+	// one around the local axes by z first, then y, then x. Try rotating all axes but one on 90 degrees, and see what triangles form as you rotate each angle.
 	
 	
 	if (previousGravity != gravVector) {
