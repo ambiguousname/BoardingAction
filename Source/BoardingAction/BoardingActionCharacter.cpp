@@ -163,7 +163,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		if (downGravCross.IsZero()) {
 			for (int i = 0; i < 3; i++) {
-				if (normalGrav[i] == 0) {
+				if (normalGrav[i] - upVector[i] == 0) {
 					downGravCross = FVector::ZeroVector;
 					downGravCross[i] = 1;
 					break;
@@ -198,6 +198,8 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// I hope this works.
 		// YESSSSSSSS.
 		// TODO: Make this gradual, clean this up, add the 180 degree rule.
+		// The problem with doing this gradually is that we always lose a tiny bit of accuracy.
+		// So knowing the exact rotation we need is useful.
 		SetActorRotation(newRotation);
 
 		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
@@ -211,6 +213,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 			rotGravityPercent = 1;
 		}
 
+		// I think we need to make this a Lerp instead of adding, since this loses accuracy. A lerp actually takes us to where we need to go.
 		AddActorLocalRotation(rotGravity * rotGravityPercent - rotGravity * prevGravityPercent);
 
 		prevGravityPercent = rotGravityPercent;
