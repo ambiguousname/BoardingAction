@@ -107,7 +107,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// If the cross product results in the zero vector, you can rotate along any axis where the components for the vector are zero.
 	// To get the angle to rotate, use these formulas:
 	// cos(theta) * |A| * |B| = dot(A, B).
-	// sin(theta) * |A| * |B| = cross(A, B).
+	// sin(theta) * |A| * |B| = |cross(A, B)|. (Note to self: It's only just the cross product if you're working in 2D).
 	// and we want to get theta in terms of atan2 (since atan2 is in terms of the angle from the positive x axis).
 	// sin(theta)/cos(theta) = cross(A, B)/dot(A, B).
 	// tan(theta) = cross(A, B)/dot(A, B).
@@ -142,7 +142,6 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// one around the local axes by z first, then y, then x. Try rotating all axes but one on 0 or 90 degrees, and see what triangles form as you rotate each angle.
 	// I am stupid, there's a FORMULA FOR TELLING YOU HOW TO GET ARCTAN FROM ZYX. Good to know that I got *nearly* everything right (I messed up in calculating phi).
 	
-	
 	if (previousGravity != gravVector) {
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
 		// Even simpler solution for following the 180 degree rule than this. If the DotProduct of the vector representing
@@ -152,11 +151,58 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		if (FVector::DotProduct(plane, lookRot) < 0) {
 			lookRot *= -plane;
 		}*/
-		rotGravity = gravVector.ToOrientationRotator() - ((-GetActorUpVector()).ToOrientationRotator()); 
+		// Get the current vectors:
+		FVector upVector = GetActorUpVector();
+		FVector rightVector = GetActorRightVector();
+		FVector forwardVector = GetActorForwardVector();
+
+		FVector normalGrav = gravVector.GetSafeNormal();
+
+		// We're going to use the cross product method I detailed above to get the new vector positions, since making and multiplying a 3x3 matrix is work I don't want to do.
+		FVector downGravCross = FVector::CrossProduct(-upVector, normalGrav);
+
+		if (downGravCross.IsZero()) {
+			for (int i = 0; i < 3; i++) {
+				if (normalGrav[i] == 0) {
+					downGravCross = FVector::ZeroVector;
+					downGravCross[i] = 1;
+					break;
+				}
+			}
+		}
+		
+		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
+
+		// In case downGravCross happens to be the zero vector and gets changed:
+		FVector actualCross = FVector::CrossProduct(-upVector, normalGrav);
+
+		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(-upVector, normalGrav)) * 180/PI; // We need to convert to degrees.
+
+		// Now we get the new vectors:
+		FVector newUp = upVector.RotateAngleAxis(crossAngle, downGravCross); //z
+		FVector newRight = rightVector.RotateAngleAxis(crossAngle, downGravCross); //y
+		// And for future code, we can apply the 180 degree rule to newForward.
+		FVector newForward = forwardVector.RotateAngleAxis(crossAngle, downGravCross); //x
+
+		// And now we calculate each of the rotations:
+		float pitch = FMath::Atan2(-newForward.Z, FMath::Sqrt(1 - FMath::Pow(newForward.Z, 2))) * 180/PI;
+
+		float yaw = FMath::Atan2(newForward.Y, newForward.X) * 180/PI;
+
+		float roll = FMath::Atan2(newRight.Z, newUp.Z) * 180/PI;
+
+		UE_LOG(LogTemp, Warning, TEXT("%f %f %f"), pitch, yaw, roll);
+
+		FRotator newRotation = FRotator{ pitch, yaw, roll };
+
+		// I hope this works.
+		// YESSSSSSSS.
+		// TODO: Make this gradual, clean this up, add the 180 degree rule.
+		SetActorRotation(newRotation);
 
 		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
-		rotGravityPercent = 0;
-		prevGravityPercent = 0;
+		//rotGravityPercent = 0;
+		//prevGravityPercent = 0;
 	}
 
 	if (rotGravityPercent < 1) {
