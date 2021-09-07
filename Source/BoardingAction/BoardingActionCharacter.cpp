@@ -158,37 +158,25 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		FVector normalGrav = gravVector.GetSafeNormal();
 
-		// We're going to use the cross product method I detailed above to get the new vector positions, since making and multiplying a 3x3 matrix is work I don't want to do.
-		FVector downGravCross = FVector::CrossProduct(-upVector, normalGrav);
-
-		UE_LOG(LogTemp, Warning, TEXT("Current down: %s Current grav: %s"), *(-upVector).ToString(), *normalGrav.ToString());
-
-		if (downGravCross.IsNearlyZero()) {
-			for (int i = 0; i < 3; i++) {
-				if (normalGrav[i] - upVector[i] == 0) {
-					downGravCross = FVector::ZeroVector;
-					downGravCross[i] = 1;
-					break;
-				}
+		// Alright, we're going to use a simplified version of the transformation matrix above.
+		// I'm not going to make any 3x3 matrices for the sake of simplicity.
+		FVector transformVector = FVector{};
+		for (int i = 0; i < 3; i++) {
+			// We don't want to divide by 0.
+			if (normalGrav[i] != 0) {
+				transformVector[i] = (-upVector)[i] / normalGrav[i];
+			}
+			else {
+				transformVector[i] = (-upVector)[i];
 			}
 		}
-		
-		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
-
-		// In case downGravCross happens to be the zero vector and gets changed:
-		FVector actualCross = FVector::CrossProduct(-upVector, normalGrav);
-
-		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s"), *downGravCross.ToString(), *actualCross.ToString());
-
-		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(-upVector, normalGrav)) * 180/PI; // We need to convert to degrees.
-
-		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f"), crossAngle);
 
 		// Now we get the new vectors:
-		FVector newUp = upVector.RotateAngleAxis(crossAngle, downGravCross); //z
-		FVector newRight = rightVector.RotateAngleAxis(crossAngle, downGravCross); //y
+		// Because Unreal engine allows this (for some reason), we're going to multiply the vectors by individual components:
+		FVector newUp = transformVector * upVector; //z
+		FVector newRight = transformVector * rightVector; //y
 		// And for future code, we can apply the 180 degree rule to newForward.
-		FVector newForward = forwardVector.RotateAngleAxis(crossAngle, downGravCross); //x
+		FVector newForward = transformVector * forwardVector; //x
 
 		UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s"), *upVector.ToString(), *newUp.ToString());
 
