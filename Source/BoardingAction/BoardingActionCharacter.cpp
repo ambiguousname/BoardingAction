@@ -148,9 +148,9 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// We're going to use the cross product method I detailed above to get the new vector positions,
 		// since rotation matrices are a nightmare, and StackOverflow was not particularly helpful.
 		// My plan for making this better involves improvements elsewhere. I might come back to this later.
-		FVector downGravCross = FVector::CrossProduct(normalGrav, downVector);
+		FVector downGravCross = FVector::CrossProduct(downVector, normalGrav);
 
-		UE_LOG(LogTemp, Warning, TEXT("Current down: %s Current grav: %s"), *(downVector).ToString(), *normalGrav.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Current grav: %s Current down: %s"), *normalGrav.ToString(), *(downVector).ToString());
 
 		if (downGravCross.IsNearlyZero()) {
 			for (int i = 0; i < 3; i++) {
@@ -165,20 +165,26 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
 
 		// In case downGravCross happens to be the zero vector and gets changed:
-		FVector actualCross = FVector::CrossProduct(normalGrav, downVector);
+		FVector actualCross = FVector::CrossProduct(downVector, normalGrav);
 
 		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(downVector, normalGrav));
 
-		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(normalGrav, downVector)) * 180 / PI; // We need to convert to degrees.
+		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(downVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
 
-		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f"), crossAngle);
+
+		// This is weird. The target down is completely right, but the camera isn't inverted correctly?
+		// Which means that everything here is calclated correctly, and the only problem is with the calculation of the pitch, yaw, and roll, right?
+		FVector targetDown = (-upVector).RotateAngleAxis(crossAngle, downGravCross);
+
+		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f Dot Product: %f Target Down: %s Up Vector: %s"), crossAngle, FVector::DotProduct(targetDown, normalGrav), *targetDown.ToString(), *upVector.ToString());
 
 		// Now we get the new vectors:
 		FVector newUp = upVector.RotateAngleAxis(crossAngle, downGravCross); //z
 		FVector newRight = rightVector.RotateAngleAxis(crossAngle, downGravCross); //y
 		FVector newForward = forwardVector.RotateAngleAxis(crossAngle, downGravCross); //x
 
-		//UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s"), *upVector.ToString(), *newUp.ToString());
+
+		UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s "), *(upVector).ToString(), *(newUp).ToString());
 
 		// And now we calculate each of the rotations:
 		float pitch = FMath::Atan2(-newForward.Z, FMath::Sqrt(1 - FMath::Pow(newForward.Z, 2))) * 180/PI;
@@ -317,13 +323,13 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 
 void ABoardingActionCharacter::OnRightClick() {
 	if (worldPhysics->GetGravity().Z == -9.8f) {
-		worldPhysics->SetGravity(0, 9.8f, 0);
+		worldPhysics->SetGravity(9.8f, 0, 0);
 	}
 	else if (worldPhysics->GetGravity().Z == 9.8f) {
 		worldPhysics->SetGravity(9.8f, 0, 0);
 	}
 	else if (worldPhysics->GetGravity().X == 9.8f) {
-		worldPhysics->SetGravity(0, 9.8f, 0);
+		worldPhysics->SetGravity(0, 0, -9.8f);
 	}
 	else {
 		worldPhysics->SetGravity(0, 0, -9.8f);
