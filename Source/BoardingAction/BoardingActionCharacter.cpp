@@ -205,6 +205,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// YESSSSSSSS.
 		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
 		// (or alternatively, the cross product solution might not work with rapidly changing stuff, so maybe trying to implement the transformation matrix?)
+		// I think I am going to have to implement the transformation matrix next, since gravity doesn't work just right in other directions with the cross product rotation involved.
 		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
 		// The problem with doing this gradually is that we always lose a tiny bit of accuracy.
 		// So knowing the exact rotation we need is useful.
@@ -335,6 +336,9 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 void ABoardingActionCharacter::OnRightClick() {
 	if (worldPhysics->GetGravity().Z == -9.8f) {
 		worldPhysics->SetGravity(0, 0, 9.8f);
+	}
+	else if (worldPhysics->GetGravity().Z == 9.8f){
+		worldPhysics->SetGravity(-9.8f, 0, 0);
 	}
 	else {
 		worldPhysics->SetGravity(0, 0, -9.8f);
