@@ -115,16 +115,9 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// Note, this solution still requires me to use ToOrientationRotator(), which I want to avoid. So instead...
 
 	// Let's just create a rotation matrix.
-	// If d represents our down vector, and g represents where gravity is pulling, we want the matrix:
-	// [ g1/d1  0      0   ]
-	// [  0   g2/d2    0   ]
-	// [  0     0    g3/d3 ]
-	// Since multiplying any of the vectors in the player's coordinate system by this matrix will result in
-	// getting this in terms of gravity's new coordinate system.
-	// From there, we know how the player's vectors should be, and from that we can calculate what the desired rotation is.
-	// Taken from: https://math.stackexchange.com/questions/114050/rotating-two-vectors-to-point-in-the-same-direction
-	// So, step 1: Create a 3x3 matrix, using the formula above.
-	// Step 2: Multiply the up (u), forward (f), and right (r) coordinates for the player by the matrix (we'll call these u', f', and r')
+	// As this slowly unravels, my linear algebra knowledge is coming back to me. That stack overflow solution was actually terrible,
+	// so instead... it's time to actually research rotation matrices on Wikipedia.
+	// Be right back.
 	// Step 3: Use these formulas: https://en.wikipedia.org/wiki/Euler_angles#Tait%E2%80%93Bryan_angles_2 to calculate the pitch, yaw, and roll.
 	// Make sure to use atan2 instead of inverse sin or cosine.
 	// Remember, rotation on the z-axis (psi) is yaw, y-axis (theta) is pitch, x-axis (phi) is roll.
@@ -158,25 +151,12 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		FVector normalGrav = gravVector.GetSafeNormal();
 
-		// Alright, we're going to use a simplified version of the transformation matrix above.
-		// I'm not going to make any 3x3 matrices for the sake of simplicity.
-		FVector transformVector = FVector{};
-		for (int i = 0; i < 3; i++) {
-			// We don't want to divide by 0.
-			if (normalGrav[i] != 0) {
-				transformVector[i] = (-upVector)[i] / normalGrav[i];
-			}
-			else {
-				transformVector[i] = (-upVector)[i];
-			}
-		}
-
 		// Now we get the new vectors:
 		// Because Unreal engine allows this (for some reason), we're going to multiply the vectors by individual components:
-		FVector newUp = transformVector * upVector; //z
-		FVector newRight = transformVector * rightVector; //y
+		FVector newUp = upVector; //z
+		FVector newRight = rightVector; //y
 		// And for future code, we can apply the 180 degree rule to newForward.
-		FVector newForward = transformVector * forwardVector; //x
+		FVector newForward = forwardVector; //x
 
 		UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s"), *upVector.ToString(), *newUp.ToString());
 
