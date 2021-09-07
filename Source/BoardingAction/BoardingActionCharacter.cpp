@@ -116,8 +116,8 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 	// Let's just create a rotation matrix.
 	// As this slowly unravels, my linear algebra knowledge is coming back to me. That stack overflow solution was actually terrible,
-	// so instead... it's time to actually research rotation matrices on Wikipedia.
-	// Be right back.
+	// so instead... it's time to actually research rotation matrices on Wikipedia: https://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions
+	// Step 1: Get the cross product of 
 	// Step 3: Use these formulas: https://en.wikipedia.org/wiki/Euler_angles#Tait%E2%80%93Bryan_angles_2 to calculate the pitch, yaw, and roll.
 	// Make sure to use atan2 instead of inverse sin or cosine.
 	// Remember, rotation on the z-axis (psi) is yaw, y-axis (theta) is pitch, x-axis (phi) is roll.
@@ -151,12 +151,38 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		FVector normalGrav = gravVector.GetSafeNormal();
 
+		// We're going to use the cross product method I detailed above to get the new vector positions,
+		// since rotation matrices are a nightmare, and StackOverflow was not particularly helpful.
+		// My plan for making this better involves improvements elsewhere. I might come back to this later.
+		FVector downGravCross = FVector::CrossProduct(-upVector, normalGrav);
+
+		UE_LOG(LogTemp, Warning, TEXT("Current down: %s Current grav: %s"), *(-upVector).ToString(), *normalGrav.ToString());
+
+		if (downGravCross.IsNearlyZero()) {
+			for (int i = 0; i < 3; i++) {
+				if (normalGrav[i] - upVector[i] == 0) {
+					downGravCross = FVector::ZeroVector;
+					downGravCross[i] = 1;
+					break;
+				}
+			}
+		}
+
+		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
+
+		// In case downGravCross happens to be the zero vector and gets changed:
+		FVector actualCross = FVector::CrossProduct(-upVector, normalGrav);
+
+		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s"), *downGravCross.ToString(), *actualCross.ToString());
+
+		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(-upVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
+
+		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f"), crossAngle);
+
 		// Now we get the new vectors:
-		// Because Unreal engine allows this (for some reason), we're going to multiply the vectors by individual components:
-		FVector newUp = upVector; //z
-		FVector newRight = rightVector; //y
-		// And for future code, we can apply the 180 degree rule to newForward.
-		FVector newForward = forwardVector; //x
+		FVector newUp = upVector.RotateAngleAxis(crossAngle, downGravCross); //z
+		FVector newRight = rightVector.RotateAngleAxis(crossAngle, downGravCross); //y
+		FVector newForward = forwardVector.RotateAngleAxis(crossAngle, downGravCross); //x
 
 		UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s"), *upVector.ToString(), *newUp.ToString());
 
@@ -304,9 +330,6 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 void ABoardingActionCharacter::OnRightClick() {
 	if (worldPhysics->GetGravity().Z == -9.8f) {
 		worldPhysics->SetGravity(0, 0, 9.8f);
-	}
-	else if (worldPhysics->GetGravity().Z == 9.8f){
-		worldPhysics->SetGravity(-9.8f, 0, 0);
 	}
 	else {
 		worldPhysics->SetGravity(0, 0, -9.8f);
