@@ -150,17 +150,18 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		FVector forwardVector = GetActorForwardVector();
 
 		FVector normalGrav = gravVector.GetSafeNormal();
+		FVector downVector = -upVector;
 
 		// We're going to use the cross product method I detailed above to get the new vector positions,
 		// since rotation matrices are a nightmare, and StackOverflow was not particularly helpful.
 		// My plan for making this better involves improvements elsewhere. I might come back to this later.
-		FVector downGravCross = FVector::CrossProduct(-upVector, normalGrav);
+		FVector downGravCross = FVector::CrossProduct(downVector, normalGrav);
 
-		UE_LOG(LogTemp, Warning, TEXT("Current down: %s Current grav: %s"), *(-upVector).ToString(), *normalGrav.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Current down: %s Current grav: %s"), *(downVector).ToString(), *normalGrav.ToString());
 
 		if (downGravCross.IsNearlyZero()) {
 			for (int i = 0; i < 3; i++) {
-				if (normalGrav[i] - (-upVector[i]) == 0) {
+				if (normalGrav[i] - downVector[i] == 0) {
 					downGravCross = FVector::ZeroVector;
 					downGravCross[i] = 1;
 					break;
@@ -171,11 +172,11 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
 
 		// In case downGravCross happens to be the zero vector and gets changed:
-		FVector actualCross = FVector::CrossProduct(-upVector, normalGrav);
+		FVector actualCross = FVector::CrossProduct(downVector, normalGrav);
 
-		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(-upVector, normalGrav));
+		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(downVector, normalGrav));
 
-		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(-upVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
+		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(downVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
 
 		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f"), crossAngle);
 
@@ -333,6 +334,9 @@ void ABoardingActionCharacter::OnRightClick() {
 	}
 	else if (worldPhysics->GetGravity().Z == 9.8f) {
 		worldPhysics->SetGravity(9.8f, 0, 0);
+	}
+	else if (worldPhysics->GetGravity().X == 9.8f) {
+		worldPhysics->SetGravity(0, 9.8f, 0);
 	}
 	else {
 		worldPhysics->SetGravity(0, 0, -9.8f);
