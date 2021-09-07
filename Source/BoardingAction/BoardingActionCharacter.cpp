@@ -222,7 +222,8 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 			rotGravityPercent = 1;
 		}
 
-		// I think we need to make this a Lerp instead of adding, since this loses accuracy. A lerp actually takes us to where we need to go.
+		// We gradually transition from the oldRotation to the new one. Since these are all in global space, we can't just set the
+		// new rotation, so we have to transition away from the oldRotation (with 1 - rotGravityPercent).
 		SetActorRotation((1 - rotGravityPercent) * oldRotation + rotGravity * rotGravityPercent);
 	}
 
