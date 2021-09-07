@@ -48,8 +48,8 @@ protected:
 	FVector previousGravity;
 
 	FRotator rotGravity;
+	FRotator oldRotation;
 	float rotGravityPercent;
-	float prevGravityPercent;
 
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */

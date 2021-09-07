@@ -69,7 +69,7 @@ void ABoardingActionCharacter::BeginPlay()
 
 	rotGravity = (-GetActorUpVector()).ToOrientationRotator();
 	rotGravityPercent = 1;
-	prevGravityPercent = 1;
+	oldRotation = GetActorRotation();
 
 	UWorld* world = GetWorld();
 	worldPhysics = world->GetSubsystem<UPhysicsSubsystem>();
@@ -161,7 +161,9 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// We're going to use the cross product method I detailed above to get the new vector positions, since making and multiplying a 3x3 matrix is work I don't want to do.
 		FVector downGravCross = FVector::CrossProduct(-upVector, normalGrav);
 
-		if (downGravCross.IsZero()) {
+		UE_LOG(LogTemp, Warning, TEXT("Current down: %s Current grav: %s"), *(-upVector).ToString(), *normalGrav.ToString());
+
+		if (downGravCross.IsNearlyZero()) {
 			for (int i = 0; i < 3; i++) {
 				if (normalGrav[i] - upVector[i] == 0) {
 					downGravCross = FVector::ZeroVector;
@@ -176,13 +178,19 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// In case downGravCross happens to be the zero vector and gets changed:
 		FVector actualCross = FVector::CrossProduct(-upVector, normalGrav);
 
+		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s"), *downGravCross.ToString(), *actualCross.ToString());
+
 		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(-upVector, normalGrav)) * 180/PI; // We need to convert to degrees.
+
+		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f"), crossAngle);
 
 		// Now we get the new vectors:
 		FVector newUp = upVector.RotateAngleAxis(crossAngle, downGravCross); //z
 		FVector newRight = rightVector.RotateAngleAxis(crossAngle, downGravCross); //y
 		// And for future code, we can apply the 180 degree rule to newForward.
 		FVector newForward = forwardVector.RotateAngleAxis(crossAngle, downGravCross); //x
+
+		UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s"), *upVector.ToString(), *newUp.ToString());
 
 		// And now we calculate each of the rotations:
 		float pitch = FMath::Atan2(-newForward.Z, FMath::Sqrt(1 - FMath::Pow(newForward.Z, 2))) * 180/PI;
@@ -191,20 +199,21 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		float roll = FMath::Atan2(newRight.Z, newUp.Z) * 180/PI;
 
-		UE_LOG(LogTemp, Warning, TEXT("%f %f %f"), pitch, yaw, roll);
-
 		FRotator newRotation = FRotator{ pitch, yaw, roll };
 
 		// I hope this works.
 		// YESSSSSSSS.
-		// TODO: Make this gradual, clean this up, add the 180 degree rule.
+		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
+		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
 		// The problem with doing this gradually is that we always lose a tiny bit of accuracy.
 		// So knowing the exact rotation we need is useful.
-		SetActorRotation(newRotation);
+		rotGravity = newRotation;
+		oldRotation = GetActorRotation();
+
+		UE_LOG(LogTemp, Warning, TEXT("New rot: %s Old rot: %s"), *newRotation.ToString(), *oldRotation.ToString());
 
 		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
-		//rotGravityPercent = 0;
-		//prevGravityPercent = 0;
+		rotGravityPercent = 0;
 	}
 
 	if (rotGravityPercent < 1) {
@@ -214,9 +223,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		}
 
 		// I think we need to make this a Lerp instead of adding, since this loses accuracy. A lerp actually takes us to where we need to go.
-		AddActorLocalRotation(rotGravity * rotGravityPercent - rotGravity * prevGravityPercent);
-
-		prevGravityPercent = rotGravityPercent;
+		SetActorRotation((1 - rotGravityPercent) * oldRotation + rotGravity * rotGravityPercent);
 	}
 
 	previousGravity = gravVector;
