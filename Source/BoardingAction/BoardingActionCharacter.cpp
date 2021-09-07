@@ -204,6 +204,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// I hope this works.
 		// YESSSSSSSS.
 		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
+		// (or alternatively, the cross product solution might not work with rapidly changing stuff, so maybe trying to implement the transformation matrix?)
 		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
 		// The problem with doing this gradually is that we always lose a tiny bit of accuracy.
 		// So knowing the exact rotation we need is useful.
