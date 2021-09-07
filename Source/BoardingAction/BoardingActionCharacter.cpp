@@ -317,7 +317,7 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 
 void ABoardingActionCharacter::OnRightClick() {
 	if (worldPhysics->GetGravity().Z == -9.8f) {
-		worldPhysics->SetGravity(0, 0, 9.8f);
+		worldPhysics->SetGravity(0, 9.8f, 0);
 	}
 	else if (worldPhysics->GetGravity().Z == 9.8f) {
 		worldPhysics->SetGravity(9.8f, 0, 0);
