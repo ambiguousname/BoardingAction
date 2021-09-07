@@ -108,16 +108,12 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// To get the angle to rotate, use these formulas:
 	// cos(theta) * |A| * |B| = dot(A, B).
 	// sin(theta) * |A| * |B| = |cross(A, B)|. (Note to self: It's only just the cross product if you're working in 2D).
-	// and we want to get theta in terms of atan2 (since atan2 is in terms of the angle from the positive x axis).
 	// sin(theta)/cos(theta) = cross(A, B)/dot(A, B).
 	// tan(theta) = cross(A, B)/dot(A, B).
+	// and we want to get theta in terms of atan2 (since atan2 is in terms of the angle from the positive x axis).
 	// theta = atan2(cross(A, B), dot(A, B)).
-	// Note, this solution still requires me to use ToOrientationRotator(), which I want to avoid. So instead...
-
-	// Let's just create a rotation matrix.
-	// As this slowly unravels, my linear algebra knowledge is coming back to me. That stack overflow solution was actually terrible,
-	// so instead... it's time to actually research rotation matrices on Wikipedia: https://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions
-	// Step 1: Get the cross product of 
+	// So that's step 1.
+	// Step 2: Use RotateAngleAxis() to rotate the up, forward, and right vectors towards the down vector (using theta).
 	// Step 3: Use these formulas: https://en.wikipedia.org/wiki/Euler_angles#Tait%E2%80%93Bryan_angles_2 to calculate the pitch, yaw, and roll.
 	// Make sure to use atan2 instead of inverse sin or cosine.
 	// Remember, rotation on the z-axis (psi) is yaw, y-axis (theta) is pitch, x-axis (phi) is roll.
@@ -130,13 +126,10 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// theta = atan2(-x_3, sqrt(1 - x_3^2))
 	// psi = atan2(x_2, x_1). You can see the diagram above for a visual representation of this.
 	// phi = atan2(y_3, z_3). This is because y and z are perpendicular, so the opposite of the triangle formed by z is the adjacent for the triangle formed by y.
-	// I hope this works. If not, more complicated equations are to come!
-	// If you want to see how you come to this by yourself, go into a 3d modelling program (like blender), and make two object axes objects. Try rotating 
-	// one around the local axes by z first, then y, then x. Try rotating all axes but one on 0 or 90 degrees, and see what triangles form as you rotate each angle.
-	// I am stupid, there's a FORMULA FOR TELLING YOU HOW TO GET ARCTAN FROM ZYX. Good to know that I got *nearly* everything right (I messed up in calculating phi).
 	
 	if (previousGravity != gravVector) {
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
+		// I might add this later if I feel that the current gradual rotations are too jarring.
 		// Even simpler solution for following the 180 degree rule than this. If the DotProduct of the vector representing
 		// where the player is going to be rotated and the player's forward vector is < 0, multiply the vector by -actorForwardVector.
 		/*FVector plane = FVector::CrossProduct(worldPhysics->GetGravity(), GetActorRightVector());
@@ -155,7 +148,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// We're going to use the cross product method I detailed above to get the new vector positions,
 		// since rotation matrices are a nightmare, and StackOverflow was not particularly helpful.
 		// My plan for making this better involves improvements elsewhere. I might come back to this later.
-		FVector downGravCross = FVector::CrossProduct(downVector, normalGrav);
+		FVector downGravCross = FVector::CrossProduct(normalGrav, downVector);
 
 		UE_LOG(LogTemp, Warning, TEXT("Current down: %s Current grav: %s"), *(downVector).ToString(), *normalGrav.ToString());
 
@@ -172,11 +165,11 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
 
 		// In case downGravCross happens to be the zero vector and gets changed:
-		FVector actualCross = FVector::CrossProduct(downVector, normalGrav);
+		FVector actualCross = FVector::CrossProduct(normalGrav, downVector);
 
 		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(downVector, normalGrav));
 
-		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(downVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
+		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(normalGrav, downVector)) * 180 / PI; // We need to convert to degrees.
 
 		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f"), crossAngle);
 
@@ -196,14 +189,8 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		FRotator newRotation = FRotator{ pitch, yaw, roll };
 
-		// I hope this works.
-		// YESSSSSSSS.
 		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
-		// (or alternatively, the cross product solution might not work with rapidly changing stuff, so maybe trying to implement the transformation matrix?)
-		// I think I am going to have to implement the transformation matrix next, since gravity doesn't work just right in other directions with the cross product rotation involved.
 		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
-		// The problem with doing this gradually is that we always lose a tiny bit of accuracy.
-		// So knowing the exact rotation we need is useful.
 		rotGravity = newRotation;
 		oldRotation = GetActorRotation();
 
@@ -330,7 +317,7 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 
 void ABoardingActionCharacter::OnRightClick() {
 	if (worldPhysics->GetGravity().Z == -9.8f) {
-		worldPhysics->SetGravity(0, 0, 9.8f);
+		worldPhysics->SetGravity(9.8f, 0, 0);
 	}
 	else if (worldPhysics->GetGravity().Z == 9.8f) {
 		worldPhysics->SetGravity(9.8f, 0, 0);
