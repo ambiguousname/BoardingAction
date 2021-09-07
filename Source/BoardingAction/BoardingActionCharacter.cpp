@@ -160,7 +160,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		if (downGravCross.IsNearlyZero()) {
 			for (int i = 0; i < 3; i++) {
-				if (normalGrav[i] - upVector[i] == 0) {
+				if (normalGrav[i] - (-upVector[i]) == 0) {
 					downGravCross = FVector::ZeroVector;
 					downGravCross[i] = 1;
 					break;
@@ -173,7 +173,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// In case downGravCross happens to be the zero vector and gets changed:
 		FVector actualCross = FVector::CrossProduct(-upVector, normalGrav);
 
-		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s"), *downGravCross.ToString(), *actualCross.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(-upVector, normalGrav));
 
 		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(-upVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
 
@@ -184,7 +184,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		FVector newRight = rightVector.RotateAngleAxis(crossAngle, downGravCross); //y
 		FVector newForward = forwardVector.RotateAngleAxis(crossAngle, downGravCross); //x
 
-		UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s"), *upVector.ToString(), *newUp.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s"), *upVector.ToString(), *newUp.ToString());
 
 		// And now we calculate each of the rotations:
 		float pitch = FMath::Atan2(-newForward.Z, FMath::Sqrt(1 - FMath::Pow(newForward.Z, 2))) * 180/PI;
@@ -206,7 +206,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		rotGravity = newRotation;
 		oldRotation = GetActorRotation();
 
-		UE_LOG(LogTemp, Warning, TEXT("New rot: %s Old rot: %s"), *newRotation.ToString(), *oldRotation.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("New rot: %s Old rot: %s"), *newRotation.ToString(), *oldRotation.ToString());
 
 		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
 		rotGravityPercent = 0;
@@ -330,6 +330,9 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 void ABoardingActionCharacter::OnRightClick() {
 	if (worldPhysics->GetGravity().Z == -9.8f) {
 		worldPhysics->SetGravity(0, 0, 9.8f);
+	}
+	else if (worldPhysics->GetGravity().Z == 9.8f) {
+		worldPhysics->SetGravity(9.8f, 0, 0);
 	}
 	else {
 		worldPhysics->SetGravity(0, 0, -9.8f);
