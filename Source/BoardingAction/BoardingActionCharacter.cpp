@@ -180,17 +180,15 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 
 		//UE_LOG(LogTemp, Warning, TEXT("Old Up: %s"), *GetActorUpVector().ToString());
 
-		SetActorRotation(newRot);
-
 		//UE_LOG(LogTemp, Warning, TEXT("New Up: %s"), *GetActorUpVector().ToString());
 
 		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
 		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
-		//rotGravity = newRotation;
-		//oldRotation = GetActorRotation();
+		rotGravity = newRot;
+		oldRotation = GetActorRotation();
 
 		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
-		//rotGravityPercent = 0;
+		rotGravityPercent = 0;
 	}
 
 	if (rotGravityPercent < 1) {
