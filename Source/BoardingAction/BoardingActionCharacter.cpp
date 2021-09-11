@@ -162,6 +162,15 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 			}
 		}
 
+		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
+
+		// In case downGravCross happens to be the zero vector and gets changed:
+		FVector actualCross = FVector::CrossProduct(downVector, normalGrav);
+
+		//UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(downVector, normalGrav));
+
+		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(downVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
+
 		// I'm not actually sure if this is intrinsic or extrinsic. I should look this up.
 		// Did some research, I think what I want is from axis/angle to something else: https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions#Conversion_formulae_between_formalisms
 		// So, for AxisAngle, all I have to do is to normalize downGravCross (maybe rename it axisOfRotation?), and multiply that by crossAngle.
