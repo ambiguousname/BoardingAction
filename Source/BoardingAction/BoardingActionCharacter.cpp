@@ -146,10 +146,10 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		FVector normalGrav = gravVector.GetSafeNormal();
 		FVector downVector = -upVector;
 
-		// We're going to use the cross product method I detailed above to get the new vector positions,
-		// since rotation matrices are a nightmare, and StackOverflow was not particularly helpful.
-		// My plan for making this better involves improvements elsewhere. I might come back to this later.
-		FVector downGravCross = FVector::CrossProduct(downVector, normalGrav);
+		// I figured it out!
+		// We're getting the cross product with respect to how the player's down vector currently is, and then SETTING the rotation.
+		// Instead, we want to use the universal down of gravity to figure out how to set the player's rotation:
+		FVector downGravCross = FVector::CrossProduct(FVector::DownVector, normalGrav);
 
 		//UE_LOG(LogTemp, Warning, TEXT("Current grav: %s Current down: %s"), *normalGrav.ToString(), *(downVector).ToString());
 		if (downGravCross.IsNearlyZero()) {
@@ -162,29 +162,27 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 			}
 		}
 
-		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
-
 		// In case downGravCross happens to be the zero vector and gets changed:
-		FVector actualCross = FVector::CrossProduct(downVector, normalGrav);
+		FVector actualCross = FVector::CrossProduct(FVector::DownVector, normalGrav);
 
-		//UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(downVector, normalGrav));
+		//UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(FVector::DownVector, normalGrav));
 
-		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(downVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
+		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(FVector::DownVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
 
-		// I'm not actually sure if this is intrinsic or extrinsic. I should look this up.
-		// Did some research, I think what I want is from axis/angle to something else: https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions#Conversion_formulae_between_formalisms
-		// So, for AxisAngle, all I have to do is to normalize downGravCross (maybe rename it axisOfRotation?), and multiply that by crossAngle.
-		// Now I have an axisangle representation, and can convert that into a rotation matrix.
-		// From the rotation matrix, I can convert that into the angles I need.
-		// And for that, I think I'll use this paper: http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
-		// Oh, even better! I already have an axis-angle representation, so I can just convert from axis-angle to quaternion (same wikipedia article)
+		// Simplified from the nightmare that was before.
+		// We create an axis angle representation of our rotation, use the KismetMathLibrary to do the hard job of converting (https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions#Conversion_formulae_between_formalisms)
+		// And then we apply that rotation to our actor.
 		FVector axisAngle = downGravCross.GetSafeNormal();
 
 		FRotator newRot = UKismetMathLibrary::RotatorFromAxisAndAngle(axisAngle, crossAngle);
 
-		UE_LOG(LogTemp, Warning, TEXT("Axis Angle: %s %f Rotator: %s"), *axisAngle.ToString(), crossAngle, *newRot.ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("Axis Angle: %s %f Rotator: %s"), *axisAngle.ToString(), crossAngle, *newRot.ToString());
+
+		//UE_LOG(LogTemp, Warning, TEXT("Old Up: %s"), *GetActorUpVector().ToString());
 
 		SetActorRotation(newRot);
+
+		//UE_LOG(LogTemp, Warning, TEXT("New Up: %s"), *GetActorUpVector().ToString());
 
 		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
 		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
