@@ -10,6 +10,7 @@
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
@@ -118,7 +119,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	// Make sure to use atan2 instead of inverse sin or cosine.
 	// Remember, rotation on the z-axis (psi) is yaw, y-axis (theta) is pitch, x-axis (phi) is roll.
 	// All of these equations assume that the magnitude of each of these vectors is 1, so MAKE SURE THAT THE VECTORS ARE NORMALIZED.
-	// Using x, y, and z as the vectors representing our forward, right, and up vectors respectively, we can use this diagram (https://en.wikipedia.org/wiki/Euler_angles#/media/File:Projections_of_Tait-Bryan_angles.svg)
+	// Using x, y, and z as the vectors representing our forward (vector 1), right (vector 2), and up (vector 3) vectors respectively, we can use this diagram (https://en.wikipedia.org/wiki/Euler_angles#/media/File:Projections_of_Tait-Bryan_angles.svg)
 	// For calculating in terms of atan2.
 	// We can also assume that we'll first be rotating by the z-axis, then the y-axis, then the x-axis (this assumes intrinsic rotation, so apply these to the local axes after each rotation).
 	// sin(theta) = -x_3 (since theta is negative).
@@ -150,11 +151,10 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		// My plan for making this better involves improvements elsewhere. I might come back to this later.
 		FVector downGravCross = FVector::CrossProduct(downVector, normalGrav);
 
-		UE_LOG(LogTemp, Warning, TEXT("Current grav: %s Current down: %s"), *normalGrav.ToString(), *(downVector).ToString());
-
+		//UE_LOG(LogTemp, Warning, TEXT("Current grav: %s Current down: %s"), *normalGrav.ToString(), *(downVector).ToString());
 		if (downGravCross.IsNearlyZero()) {
 			for (int i = 0; i < 3; i++) {
-				if (normalGrav[i] - downVector[i] == 0) {
+				if (normalGrav[i] - downVector[i] < 0.01f) {
 					downGravCross = FVector::ZeroVector;
 					downGravCross[i] = 1;
 					break;
@@ -162,48 +162,28 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 			}
 		}
 
-		// TODO: This could probably be more efficient if I used extrinsic rotations instead of intrinsic ones. But why not try this first?
+		// I'm not actually sure if this is intrinsic or extrinsic. I should look this up.
+		// Did some research, I think what I want is from axis/angle to something else: https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions#Conversion_formulae_between_formalisms
+		// So, for AxisAngle, all I have to do is to normalize downGravCross (maybe rename it axisOfRotation?), and multiply that by crossAngle.
+		// Now I have an axisangle representation, and can convert that into a rotation matrix.
+		// From the rotation matrix, I can convert that into the angles I need.
+		// And for that, I think I'll use this paper: http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
+		// Oh, even better! I already have an axis-angle representation, so I can just convert from axis-angle to quaternion (same wikipedia article)
+		FVector axisAngle = downGravCross.GetSafeNormal();
 
-		// In case downGravCross happens to be the zero vector and gets changed:
-		FVector actualCross = FVector::CrossProduct(downVector, normalGrav);
+		FRotator newRot = UKismetMathLibrary::RotatorFromAxisAndAngle(axisAngle, crossAngle);
 
-		UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(downVector, normalGrav));
+		UE_LOG(LogTemp, Warning, TEXT("Axis Angle: %s %f Rotator: %s"), *axisAngle.ToString(), crossAngle, *newRot.ToString());
 
-		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(downVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
-
-
-		// This is weird. The target down is completely right, but the camera isn't inverted correctly?
-		// Which means that everything here is calclated correctly, and the only problem is with the calculation of the pitch, yaw, and roll, right?
-		FVector targetDown = (-upVector).RotateAngleAxis(crossAngle, downGravCross);
-
-		UE_LOG(LogTemp, Warning, TEXT("Cross Angle: %f Dot Product: %f Target Down: %s Up Vector: %s"), crossAngle, FVector::DotProduct(targetDown, normalGrav), *targetDown.ToString(), *upVector.ToString());
-
-		// Now we get the new vectors:
-		FVector newUp = upVector.RotateAngleAxis(crossAngle, downGravCross); //z
-		FVector newRight = rightVector.RotateAngleAxis(crossAngle, downGravCross); //y
-		FVector newForward = forwardVector.RotateAngleAxis(crossAngle, downGravCross); //x
-
-
-		UE_LOG(LogTemp, Warning, TEXT("Old Up: %s New Up: %s "), *(upVector).ToString(), *(newUp).ToString());
-
-		// And now we calculate each of the rotations:
-		float pitch = FMath::Atan2(-newForward.Z, FMath::Sqrt(1 - FMath::Pow(newForward.Z, 2))) * 180/PI;
-
-		float yaw = FMath::Atan2(newForward.Y, newForward.X) * 180/PI;
-
-		float roll = FMath::Atan2(newRight.Z, newUp.Z) * 180/PI;
-
-		FRotator newRotation = FRotator{ pitch, yaw, roll };
+		SetActorRotation(newRot);
 
 		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
 		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
-		rotGravity = newRotation;
-		oldRotation = GetActorRotation();
-
-		//UE_LOG(LogTemp, Warning, TEXT("New rot: %s Old rot: %s"), *newRotation.ToString(), *oldRotation.ToString());
+		//rotGravity = newRotation;
+		//oldRotation = GetActorRotation();
 
 		//The transition should be gradual, so we increment in terms of the percentage of the rotation.
-		rotGravityPercent = 0;
+		//rotGravityPercent = 0;
 	}
 
 	if (rotGravityPercent < 1) {
@@ -323,13 +303,13 @@ void ABoardingActionCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 
 void ABoardingActionCharacter::OnRightClick() {
 	if (worldPhysics->GetGravity().Z == -9.8f) {
-		worldPhysics->SetGravity(9.8f, 0, 0);
+		worldPhysics->SetGravity(0, 0, 9.8f);
 	}
 	else if (worldPhysics->GetGravity().Z == 9.8f) {
 		worldPhysics->SetGravity(9.8f, 0, 0);
 	}
 	else if (worldPhysics->GetGravity().X == 9.8f) {
-		worldPhysics->SetGravity(0, 0, -9.8f);
+		worldPhysics->SetGravity(0, 9.8f, 0);
 	}
 	else {
 		worldPhysics->SetGravity(0, 0, -9.8f);
