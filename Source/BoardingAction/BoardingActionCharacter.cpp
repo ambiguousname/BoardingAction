@@ -10,7 +10,6 @@
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
@@ -98,35 +97,6 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	FVector gravVector = worldPhysics->GetGravity();
 	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
 	mover->AddImpulse(gravVector, true);
-
-	// Primarily, this is about rotating the actor's down vector (and everything else) to match the new gravity vector.
-	// So, when the gravity changes, look at how you can rotate the down vector to match the new gravity.
-	
-	// Get the cross product between the actor's current down vector and the current gravity vector.
-	// Normalize the result of that cross product.
-	// You now have a plane whose normal vector you can now rotate your down vector around towards the new gravity vector.
-	// If the cross product results in the zero vector, you can rotate along any axis where the components for the vector are zero.
-	// To get the angle to rotate, use these formulas:
-	// cos(theta) * |A| * |B| = dot(A, B).
-	// sin(theta) * |A| * |B| = |cross(A, B)|. (Note to self: It's only just the cross product if you're working in 2D).
-	// sin(theta)/cos(theta) = cross(A, B)/dot(A, B).
-	// tan(theta) = cross(A, B)/dot(A, B).
-	// and we want to get theta in terms of atan2 (since atan2 is in terms of the angle from the positive x axis).
-	// theta = atan2(cross(A, B), dot(A, B)).
-	// So that's step 1.
-	// Step 2: Use RotateAngleAxis() to rotate the up, forward, and right vectors towards the down vector (using theta).
-	// Step 3: Use these formulas: https://en.wikipedia.org/wiki/Euler_angles#Tait%E2%80%93Bryan_angles_2 to calculate the pitch, yaw, and roll.
-	// Make sure to use atan2 instead of inverse sin or cosine.
-	// Remember, rotation on the z-axis (psi) is yaw, y-axis (theta) is pitch, x-axis (phi) is roll.
-	// All of these equations assume that the magnitude of each of these vectors is 1, so MAKE SURE THAT THE VECTORS ARE NORMALIZED.
-	// Using x, y, and z as the vectors representing our forward (vector 1), right (vector 2), and up (vector 3) vectors respectively, we can use this diagram (https://en.wikipedia.org/wiki/Euler_angles#/media/File:Projections_of_Tait-Bryan_angles.svg)
-	// For calculating in terms of atan2.
-	// We can also assume that we'll first be rotating by the z-axis, then the y-axis, then the x-axis (this assumes intrinsic rotation, so apply these to the local axes after each rotation).
-	// sin(theta) = -x_3 (since theta is negative).
-	// cos(theta) = sqrt(1 - x_3^2) (From the pythagorean theorem)
-	// theta = atan2(-x_3, sqrt(1 - x_3^2))
-	// psi = atan2(x_2, x_1). You can see the diagram above for a visual representation of this.
-	// phi = atan2(y_3, z_3). This is because y and z are perpendicular, so the opposite of the triangle formed by z is the adjacent for the triangle formed by y.
 	
 	if (previousGravity != gravVector) {
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
@@ -138,52 +108,8 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 		if (FVector::DotProduct(plane, lookRot) < 0) {
 			lookRot *= -plane;
 		}*/
-		// Get the current vectors:
-		FVector upVector = GetActorUpVector();
-		FVector rightVector = GetActorRightVector();
-		FVector forwardVector = GetActorForwardVector();
 
-		FVector normalGrav = gravVector.GetSafeNormal();
-		FVector downVector = -upVector;
-
-		// I figured it out!
-		// We're getting the cross product with respect to how the player's down vector currently is, and then SETTING the rotation.
-		// Instead, we want to use the universal down of gravity to figure out how to set the player's rotation:
-		FVector downGravCross = FVector::CrossProduct(FVector::DownVector, normalGrav);
-
-		//UE_LOG(LogTemp, Warning, TEXT("Current grav: %s Current down: %s"), *normalGrav.ToString(), *(downVector).ToString());
-		if (downGravCross.IsNearlyZero()) {
-			for (int i = 0; i < 3; i++) {
-				if (normalGrav[i] - downVector[i] < 0.01f) {
-					downGravCross = FVector::ZeroVector;
-					downGravCross[i] = 1;
-					break;
-				}
-			}
-		}
-
-		// In case downGravCross happens to be the zero vector and gets changed:
-		FVector actualCross = FVector::CrossProduct(FVector::DownVector, normalGrav);
-
-		//UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(FVector::DownVector, normalGrav));
-
-		float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(FVector::DownVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
-
-		// Simplified from the nightmare that was before.
-		// We create an axis angle representation of our rotation, use the KismetMathLibrary to do the hard job of converting (https://en.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions#Conversion_formulae_between_formalisms)
-		// And then we apply that rotation to our actor.
-		FVector axisAngle = downGravCross.GetSafeNormal();
-
-		FRotator newRot = UKismetMathLibrary::RotatorFromAxisAndAngle(axisAngle, crossAngle);
-
-		//UE_LOG(LogTemp, Warning, TEXT("Axis Angle: %s %f Rotator: %s"), *axisAngle.ToString(), crossAngle, *newRot.ToString());
-
-		//UE_LOG(LogTemp, Warning, TEXT("Old Up: %s"), *GetActorUpVector().ToString());
-
-		//UE_LOG(LogTemp, Warning, TEXT("New Up: %s"), *GetActorUpVector().ToString());
-
-		// TODO: Make sure this works when you're changing gravity rapidly (maybe by getting another version of newRotation once the gradual rotation is complete, and setting it then?)
-		// More TODO: Clean the code, make sure this uses the camera's forward (somehow?), add the 180 degree rule(?).
+		FRotator newRot = UPhysicsSubsystem::GetRotatorFromGravity(worldPhysics->GetGravity());
 		rotGravity = newRot;
 		oldRotation = GetActorRotation();
 
@@ -311,7 +237,7 @@ void ABoardingActionCharacter::OnRightClick() {
 		worldPhysics->SetGravity(0, 0, 9.8f);
 	}
 	else if (worldPhysics->GetGravity().Z == 9.8f) {
-		worldPhysics->SetGravity(9.8f, 0, 0);
+		worldPhysics->SetGravity(9.8f, 9.8f, 0);
 	}
 	else if (worldPhysics->GetGravity().X == 9.8f) {
 		worldPhysics->SetGravity(0, 9.8f, 0);

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "PhysicsSubsystem.generated.h"
 
 /**
@@ -17,6 +18,7 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection);
 	void SetGravity(float x, float y, float z);
 	FVector GetGravity();
+	static FRotator GetRotatorFromGravity(FVector grav);
 protected:
 	FVector gravity;
 };
