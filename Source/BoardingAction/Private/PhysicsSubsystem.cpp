@@ -39,6 +39,7 @@ FRotator UPhysicsSubsystem::GetRotatorFromGravity(FVector grav) {
 
 	//UE_LOG(LogTemp, Warning, TEXT("Vector we're rotating along: %s Cross product: %s Dot Product: %f"), *downGravCross.ToString(), *actualCross.ToString(), FVector::DotProduct(FVector::DownVector, normalGrav));
 
+	// This is based on the sin(theta) = |cross(A, B)|/|A|*|B| and cos(theta) = dot(A, B)/|A|*|B|
 	float crossAngle = FMath::Atan2(actualCross.Size(), FVector::DotProduct(FVector::DownVector, normalGrav)) * 180 / PI; // We need to convert to degrees.
 
 	// Simplified from the nightmare that was before.
