@@ -25,13 +25,12 @@ FRotator UPhysicsSubsystem::GetRotatorFromGravity(FVector grav) {
 	// based on information calculated from local rotation:
 	FVector downGravCross = FVector::CrossProduct(FVector::DownVector, normalGrav);
 
+	// If the cross product is zero, this means that normalGrav either goes directly up (globally), directly down (globally), or is the 0 vector.
 	if (downGravCross.IsNearlyZero()) {
-		for (int i = 0; i < 3; i++) {
-			if (normalGrav[i] - FVector::DownVector[i] < 0.01f) {
-				downGravCross = FVector::ZeroVector;
-				downGravCross[i] = 1;
-				break;
-			}
+		// If the normalGrav is the zero vector, don't make any rotations.
+		// Otherwise, just pick the forward vector as the angle we want to rotate along.
+		if (!normalGrav.IsNearlyZero()) {
+			downGravCross = FVector::ForwardVector;
 		}
 	}
 
