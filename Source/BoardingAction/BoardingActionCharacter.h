@@ -38,7 +38,7 @@ class ABoardingActionCharacter : public ACharacter
 	UCameraComponent* FirstPersonCameraComponent;
 
 public:
-	ABoardingActionCharacter();
+	ABoardingActionCharacter(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	virtual void BeginPlay();
