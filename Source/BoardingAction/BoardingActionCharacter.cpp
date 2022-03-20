@@ -101,6 +101,7 @@ void ABoardingActionCharacter::Tick(float DeltaTime) {
 	FVector gravVector = worldPhysics->GetGravity();
 	UCharacterMovementComponent* mover = FindComponentByClass<UCharacterMovementComponent>();
 	mover->AddImpulse(gravVector, true);
+
 	
 	if (previousGravity != gravVector) {
 		// Stuff for following the 180 degree rule. Not that we need it right now, because everything is actually working.
