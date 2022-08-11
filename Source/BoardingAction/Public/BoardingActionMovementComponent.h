@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/PawnMovementComponent.h"
 #include "BoardingActionMovementComponent.generated.h"
 
 /**
@@ -19,11 +21,28 @@ public:
 protected:
 	virtual void BeginPlay();
 
+	virtual void PostLoad();
+
 	virtual bool IsWalkable(const FHitResult& Hit) const;
+
+	virtual bool IsMovingOnGround();
+
+	virtual bool IsFalling();
+
+	virtual void SetDefaultMovementMode();
+
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode);
+
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction);
 
 	virtual void SetPostLandedPhysics(const FHitResult& Hit);
 
 	virtual void ProcessLanded(const FHitResult& Hit, float remainingTime, int32 Iterations);
 
 	virtual bool IsValidLandingSpot(const FVector& CapsuleLocation, const FHitResult& Hit) const;
+
+	virtual void ComputeFloorDist(const FVector& CapsuleLocation, float LineDistance, float SweepDistance, FFindFloorResult& OutFloorResult, float SweepRadius, const FHitResult* DownwardSweepResult) const;
+
+private:
+	ACharacter* CharacterOwner;
 };

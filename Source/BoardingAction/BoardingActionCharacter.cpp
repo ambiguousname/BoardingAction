@@ -20,7 +20,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 // We make sure to use the custom movement component by writing this extended version of the constructor.
 // From: https://answers.unrealengine.com/questions/414422/get-character-to-use-custom-character-movement-com.html
-ABoardingActionCharacter::ABoardingActionCharacter(const FObjectInitializer& ObjectInitializer) 
+ABoardingActionCharacter::ABoardingActionCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBoardingActionMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	// Set size for collision capsule
